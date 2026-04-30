@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luxewall — Description Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #1a1a1a; --white: #ffffff; --off-white: #f7f6f4; --light: #f0ede8;
+    --border: #e0dbd4; --border-med: #c8c2ba; --muted: #8a857e; --text: #1a1a1a;
+    --accent: #c8a96e; --success: #4a9e78; --danger: #c94040;
+  }
+  body { font-family: 'Georgia', serif; background: var(--off-white); color: var(--text); min-height: 100vh; }
+  .app { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 36px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 22px; font-weight: normal; letter-spacing: 0.04em; }
+  .logo em { font-style: normal; color: var(--accent); }
+  .header-sub { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+  .section { margin-bottom: 28px; }
+  .sec-title { font-family: 'Helvetica Neue', sans-serif; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; font-weight: 500; }
+  .sec-title-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .sec-title-row .sec-title { margin-bottom: 0; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .field label { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .guide-btn { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; color: var(--accent); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; flex-shrink: 0; }
+  .guide-box { display: none; margin-bottom: 6px; padding: 10px 12px; background: var(--white); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; font-family: 'Helvetica Neue', sans-serif; font-size: 12px; color: var(--muted); line-height: 1.65; }
+  .guide-box.open { display: block; }
+  .guide-box strong { color: var(--black); font-weight: 500; }
+  .guide-box ul { padding-left: 16px; margin-top: 4px; }
+  .guide-box li { margin-bottom: 2px; }
+
+  .field input, .field select, .field textarea {
+    font-family: 'Georgia', serif; font-size: 14px; color: var(--text); background: var(--white);
+    border: 1px solid var(--border); border-radius: 4px; padding: 9px 12px; width: 100%;
+    outline: none; transition: border-color 0.15s; appearance: none; -webkit-appearance: none;
+  }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a857e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { height: 76px; resize: vertical; }
+
+  .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .type-card { padding: 12px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--white); cursor: pointer; transition: all 0.15s; text-align: center; }
+  .type-card.active { border-color: var(--black); background: var(--black); color: var(--white); }
+  .type-card-name { font-family: 'Helvetica Neue', sans-serif; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .type-card-sub { font-family: 'Georgia', serif; font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .type-card.active .type-card-sub { color: #aaa; }
+
+  .toggle2 { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .toggle-btn { padding: 11px 14px; font-family: 'Helvetica Neue', sans-serif; font-size: 12px; background: var(--white); color: var(--muted); border: none; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .toggle-btn:first-child { border-right: 1px solid var(--border); }
+  .toggle-btn.active { background: var(--black); color: var(--white); }
+
+  .info-box { margin-top: 10px; padding: 10px 14px; background: var(--white); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; font-family: 'Helvetica Neue', sans-serif; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .info-box strong { color: var(--black); font-weight: 500; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 5px 12px; font-family: 'Helvetica Neue', sans-serif; font-size: 12px; border: 1px solid var(--border-med); border-radius: 20px; background: var(--white); color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+  .chip.selected { background: var(--black); color: var(--white); border-color: var(--black); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  .gen-btn { width: 100%; padding: 14px; font-family: 'Helvetica Neue', sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; background: var(--black); color: var(--white); border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.15s; margin-top: 8px; }
+  .gen-btn:hover { opacity: 0.85; }
+  .gen-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .output { display: none; margin-top: 32px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .output.visible { display: block; }
+  .out-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: var(--light); border-bottom: 1px solid var(--border); }
+  .out-label { font-family: 'Helvetica Neue', sans-serif; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .out-actions { display: flex; gap: 8px; }
+  .act-btn { padding: 5px 12px; font-family: 'Helvetica Neue', sans-serif; font-size: 11px; border: 1px solid var(--border-med); border-radius: 3px; background: var(--white); color: var(--muted); cursor: pointer; }
+  .act-btn:hover { color: var(--black); }
+  .out-body { padding: 22px 24px; background: var(--white); }
+  .out-text { font-family: 'Georgia', serif; font-size: 15px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
+  .checker { padding: 16px 24px; background: var(--light); border-top: 1px solid var(--border); }
+  .checker-title { font-family: 'Helvetica Neue', sans-serif; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; font-weight: 500; }
+  .checker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .chk { display: flex; align-items: center; gap: 8px; font-family: 'Helvetica Neue', sans-serif; font-size: 12px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.pass { background: var(--success); }
+  .dot.fail { background: var(--danger); }
+
+  .loader { display: inline-flex; gap: 4px; align-items: center; margin-left: 8px; }
+  .loader span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 1s infinite; }
+  .loader span:nth-child(2) { animation-delay: 0.2s; }
+  .loader span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+  @media (max-width: 600px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .type-grid { grid-template-columns: 1fr 1fr; }
+    .checker-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">Luxe<em>wall</em></div>
+    <div class="header-sub">Description Generator &nbsp;v5.3</div>
+  </div>
+
+  <!-- API Key -->
+  <div style="margin-bottom:28px;padding:14px 16px;background:var(--white);border:1px solid var(--border);border-radius:6px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-family:'Helvetica Neue',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--black);">Anthropic API Key</div>
+      <button onclick="clearKey()" style="font-family:'Helvetica Neue',sans-serif;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Clear saved key</button>
+    </div>
+    <input type="password" id="apiKey" placeholder="sk-ant-..." style="font-family:'Helvetica Neue',sans-serif;font-size:13px;color:var(--text);background:var(--off-white);border:1px solid var(--border);border-radius:4px;padding:9px 12px;width:100%;outline:none;box-sizing:border-box;" />
+    <div style="font-family:'Helvetica Neue',sans-serif;font-size:11px;color:var(--muted);margin-top:6px;">Saved in your browser only. Never sent anywhere except the Anthropic API.</div>
+  </div>
+
+  <!-- Product Type -->
+  <div class="section">
+    <div class="sec-title">Product type</div>
+    <div class="type-grid" id="typeGrid">
+      <div class="type-card active" data-type="acoustic-slat" onclick="setType(this)">
+        <div class="type-card-name">Acoustic Slat</div>
+        <div class="type-card-sub">SFS / GAR / AFD</div>
+      </div>
+      <div class="type-card" data-type="hex" onclick="setType(this)">
+        <div class="type-card-name">Hex Panel</div>
+        <div class="type-card-sub">Walnut / Oak</div>
+      </div>
+      <div class="type-card" data-type="forma" onclick="setType(this)">
+        <div class="type-card-name">Forma Tile</div>
+        <div class="type-card-sub">3-tile box system</div>
+      </div>
+      <div class="type-card" data-type="3d-textured" onclick="setType(this)">
+        <div class="type-card-name">3D Textured</div>
+        <div class="type-card-sub">Diamond / Stacked</div>
+      </div>
+      <div class="type-card" data-type="smooth" onclick="setType(this)">
+        <div class="type-card-name">Smooth Plank</div>
+        <div class="type-card-sub">Self-stick</div>
+      </div>
+      <div class="type-card" data-type="reclaimed" onclick="setType(this)">
+        <div class="type-card-name">Reclaimed</div>
+        <div class="type-card-sub">Pine / Rustic</div>
+      </div>
+      <div class="type-card" data-type="tambour" onclick="setType(this)">
+        <div class="type-card-name">Tambour</div>
+        <div class="type-card-sub">Flexible panels</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slat-only: Veneer construction -->
+  <div class="section" id="veneerSection">
+    <div class="sec-title-row">
+      <div class="sec-title">Veneer construction</div>
+      <button class="guide-btn" onclick="toggleGuide('g-veneer')">guide</button>
+    </div>
+    <div class="guide-box" id="g-veneer">
+      <strong>3-sided (SFS / GAR):</strong> Real wood veneer on the face and both sides. No exposed MDF edges. A genuine differentiator vs competitors who only veneer the face.<br><br>
+      <strong>1-sided (AFD):</strong> Face veneer only on MDF core. Never use language that implies full wrapping. Use "veneer on the front-facing surface."
+    </div>
+    <div class="toggle2">
+      <button class="toggle-btn active" onclick="setVeneer('3sided',this)">3-sided veneer &nbsp;(SFS / GAR)</button>
+      <button class="toggle-btn" onclick="setVeneer('1sided',this)">1-sided veneer &nbsp;(AFD)</button>
+    </div>
+    <div class="info-box" id="veneerHint"><strong>3-sided:</strong> Real wood veneer on the face and both sides. No exposed MDF edges.</div>
+  </div>
+
+  <!-- Slat-only: Veneer kind -->
+  <div class="section" id="veneerKindSection">
+    <div class="sec-title-row">
+      <div class="sec-title">Veneer kind</div>
+      <button class="guide-btn" onclick="toggleGuide('g-vkind')">guide</button>
+    </div>
+    <div class="guide-box" id="g-vkind">
+      <strong>Natural veneer</strong> — real oak or walnut cut from logs. Authentic grain, natural color variation, photosensitive. Only Natural Oak and Natural Walnut use this.<br><br>
+      <strong>Technical veneer</strong> — premium engineered wood with color infused into the surface for consistent, intentional tone. Used across most SFS color products.
+    </div>
+    <div class="chip-row">
+      <div class="chip selected" id="vk-natural" onclick="setVKind('natural',this)">Natural veneer</div>
+      <div class="chip" id="vk-tech" onclick="setVKind('technical',this)">Technical / color-infused veneer</div>
+    </div>
+    <div class="info-box" id="veneerKindHint" style="margin-top:10px;"><strong>Natural:</strong> Real oak or walnut veneer. Grain and color will vary naturally between panels and lots.</div>
+  </div>
+
+  <!-- Slat-only: Finish -->
+  <div class="section" id="finishSection">
+    <div class="sec-title-row">
+      <div class="sec-title">Finish type</div>
+      <button class="guide-btn" onclick="toggleGuide('g-finish')">guide</button>
+    </div>
+    <div class="guide-box" id="g-finish">
+      <strong>Color Infused (94.5" SFS):</strong> Pigment penetrates deep into wood fibers. Tone is built in, not painted on. Resists chips, fading, peeling. Satin, nearly matte.<br><br>
+      <strong>Urethane (118"/120" SFS):</strong> UV cured urethane over real wood surface. Durable satin finish.<br><br>
+      <strong>UV Cured Urethane (AFD):</strong> Topcoat on face veneer only.<br><br>
+      <strong>Unfinished:</strong> Raw surface. Only face is accessible — 1/2" gap between slats means edges cannot be evenly finished.
+    </div>
+    <div class="chip-row" id="finishChips">
+      <div class="chip selected" onclick="setFinish('color-infused',this)">Color Infused</div>
+      <div class="chip" onclick="setFinish('urethane',this)">Urethane</div>
+      <div class="chip" onclick="setFinish('uv-urethane',this)">UV Cured Urethane (AFD)</div>
+      <div class="chip" onclick="setFinish('unfinished',this)">Unfinished</div>
+    </div>
+    <div class="info-box" id="finishHint" style="margin-top:10px;"><strong>Color Infused:</strong> Pigment penetrates deep into wood fibers. Tone built in, not painted on. Resists chips, fading, peeling.</div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Product details -->
+  <div class="section">
+    <div class="sec-title">Product details</div>
+    <div class="grid2">
+
+      <div class="field">
+        <div class="field-top">
+          <label>Product name</label>
+          <button class="guide-btn" onclick="toggleGuide('g-name')">guide</button>
+        </div>
+        <div class="guide-box" id="g-name">
+          Use the exact name as it appears on the site.<br><br>
+          <strong>Swap test:</strong> Replace the name — if the description still works for another product it is wrong. Every description must be specific to this SKU.
+        </div>
+        <input type="text" id="productName" placeholder="e.g. Natural Walnut Acoustic Slat Panels" />
+      </div>
+
+      <div class="field">
+        <div class="field-top">
+          <label>Species</label>
+          <button class="guide-btn" onclick="toggleGuide('g-species')">guide</button>
+        </div>
+        <div class="guide-box" id="g-species">
+          <strong>Natural Oak and Natural Walnut</strong> are the only real wood (natural) veneers in the line.<br><br>
+          Walnut is photosensitive — will shift in tone with light exposure over time. Set expectations for any customer mixing batches or adding panels to an existing install.
+        </div>
+        <select id="species">
+          <option value="">Select species</option>
+          <option>White Oak</option>
+          <option>Walnut</option>
+          <option>American Walnut</option>
+          <option>South America Walnut</option>
+          <option>Black Walnut</option>
+          <option>Zebra Wood</option>
+          <option>Ayous</option>
+          <option>Pine</option>
+          <option>Acacia</option>
+          <option>Oak</option>
+          <option>Ash</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-top">
+          <label>Confirmed tone</label>
+          <button class="guide-btn" onclick="toggleGuide('g-tone')">guide</button>
+        </div>
+        <div class="guide-box" id="g-tone">
+          <strong>Tone must be confirmed — never guessed from the product name.</strong><br><br>
+          "Polar" does not mean pale. "Midnight" does not mean black. "Natural" does not mean light.<br><br>
+          <strong>Stained or treated finishes must be named accurately.</strong> If a product has a white wash treatment, select "Whitewashed" — do not select "Light natural." Calling a whitewashed finish "natural" caused a Diamond Polar return.
+        </div>
+        <select id="tone">
+          <option value="">Select tone — required</option>
+          <option value="NEEDS_CONFIRMATION">[Needs tone confirmation — flag this]</option>
+          <option>Light natural</option>
+          <option>Warm natural</option>
+          <option>Medium warm</option>
+          <option>Deep warm</option>
+          <option>Cool gray</option>
+          <option>Charcoal / graphite</option>
+          <option>Deep dark / near-black</option>
+          <option>Matte black</option>
+          <option>Whitewashed</option>
+          <option>Ivory / cream</option>
+          <option>Rich brown</option>
+          <option>Earthy / toasted</option>
+          <option>Smoky gray</option>
+          <option>Parchment / sand</option>
+          <option>Mixed warm tones — variation across planks</option>
+          <option>Mixed cool tones — variation across planks</option>
+          <option>Mixed naturals — light to medium variation</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-top">
+          <label>Variation level</label>
+          <button class="guide-btn" onclick="toggleGuide('g-variation')">guide</button>
+        </div>
+        <div class="guide-box" id="g-variation">
+          This is required. Customers need to know what to expect before the product arrives — variation is the most common source of complaints and returns.<br><br>
+          <strong>Subtle:</strong> consistent look across the wall, minimal differences panel to panel<br>
+          <strong>Moderate:</strong> visible differences in grain and tone, natural movement across the wall<br>
+          <strong>High:</strong> significant variation, each panel noticeably different — hex panels and reclaimed products<br><br>
+          This will appear inline in the description AND drive the natural material disclaimer.
+        </div>
+        <select id="variation">
+          <option value="">Select variation level — required</option>
+          <option value="subtle">Subtle — consistent look, minimal differences</option>
+          <option value="moderate">Moderate — visible grain and tone differences</option>
+          <option value="high">High — significant variation, each panel noticeably different</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <div class="field-top">
+          <label>Additional context</label>
+          <button class="guide-btn" onclick="toggleGuide('g-context')">guide</button>
+        </div>
+        <div class="guide-box" id="g-context">
+          Anything that makes this product stand out or helps the description be specific:<br><br>
+          <ul>
+            <li>Key selling points ("only walnut with natural veneer")</li>
+            <li>Notable use cases specific to this SKU</li>
+            <li>Known customer hesitations about this product</li>
+            <li>Competitive differentiators</li>
+          </ul>
+        </div>
+        <textarea id="context" placeholder="Optional — selling points, known hesitations, differentiators..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LED checkbox -->
+  <div style="margin-bottom:28px;">
+    <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--white);border:1px solid var(--border);border-radius:6px;cursor:pointer;" onclick="document.getElementById('addLED').click()">
+      <input type="checkbox" id="addLED" style="width:15px;height:15px;accent-color:var(--black);flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation()" />
+      <div>
+        <div style="font-family:'Helvetica Neue',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--black);">Works with LuxeLED slat wall lighting</div>
+        <div style="font-family:'Helvetica Neue',sans-serif;font-size:11px;color:var(--muted);margin-top:2px;">Check to mention LED compatibility in the description</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Placement -->
+  <div class="section">
+    <div class="sec-title-row">
+      <div class="sec-title">Where it's going (optional)</div>
+      <button class="guide-btn" onclick="toggleGuide('g-env')">guide</button>
+    </div>
+    <div class="guide-box" id="g-env" style="margin-bottom:10px;">
+      Select where this panel is most likely to be installed. Shapes the use case bullets in the description.<br><br>
+      Leave blank if it genuinely works anywhere. <strong>Do not over-tag.</strong>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-family:'Helvetica Neue',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:500;">Location</div>
+      <div class="chip-row" id="envChips">
+        <div class="chip env" onclick="toggleEnv('accent wall',this)">Accent wall</div>
+        <div class="chip env" onclick="toggleEnv('ceiling',this)">Ceiling</div>
+        <div class="chip env" onclick="toggleEnv('fireplace surround',this)">Fireplace surround</div>
+        <div class="chip env" onclick="toggleEnv('behind a bed',this)">Behind a bed</div>
+        <div class="chip env" onclick="toggleEnv('behind a sofa',this)">Behind a sofa</div>
+        <div class="chip env" onclick="toggleEnv('full room',this)">Full room</div>
+        <div class="chip env" onclick="toggleEnv('niche or alcove',this)">Niche / alcove</div>
+        <div class="chip env" onclick="toggleEnv('media wall',this)">Media wall</div>
+        <div class="chip env" onclick="toggleEnv('office or conference room',this)">Office / conference</div>
+        <div class="chip env" onclick="toggleEnv('entryway',this)">Entryway</div>
+        <div class="chip env" onclick="toggleEnv('kitchen island wrap',this)">Kitchen island</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'Helvetica Neue',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:500;">Setting</div>
+      <div class="chip-row">
+        <div class="chip env" onclick="toggleEnv('residential',this)">Residential</div>
+        <div class="chip env" onclick="toggleEnv('commercial / hospitality',this)">Commercial / hospitality</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Natural material disclaimer checkbox -->
+  <div style="margin-bottom:20px;">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:14px 16px;">
+      <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+        <input type="checkbox" id="addNaturalDisc" style="margin-top:3px;width:15px;height:15px;accent-color:var(--black);flex-shrink:0;cursor:pointer;" onchange="toggleDisclaimer()" />
+        <div>
+          <div style="font-family:'Helvetica Neue',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--black);margin-bottom:7px;">Include natural material disclaimer</div>
+          <div style="font-family:'Georgia',serif;font-size:13px;line-height:1.75;color:var(--muted);">Wood is a natural material and will vary in color, grain, and tone from piece to piece and between production runs. Panels of different lengths or batches may not be an exact color match.<br><br>For best results, we recommend ordering all panels for your project at the same time to ensure the most consistent appearance.</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <button class="gen-btn" id="genBtn" onclick="generate()">Generate description</button>
+
+  <!-- Output -->
+  <div class="output" id="outputArea">
+    <div class="out-header">
+      <span class="out-label" id="outLabel">Output</span>
+      <div class="out-actions">
+        <button class="act-btn" onclick="regenerate()">Regenerate</button>
+        <button class="act-btn" onclick="copyOut()">Copy</button>
+      </div>
+    </div>
+    <div class="out-body">
+      <div class="out-text" id="outText"></div>
+    </div>
+    <div class="checker">
+      <div class="checker-title">Quality check</div>
+      <div class="checker-grid" id="checkerGrid"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+  let pType='acoustic-slat', vSides='3sided', vKind='natural', finish='color-infused';
+  let envs=[], lastIn=null, rawOutput='';
+
+  // Persist API key in localStorage
+  window.addEventListener('DOMContentLoaded',()=>{
+    const saved=localStorage.getItem('lw_api_key');
+    if(saved) document.getElementById('apiKey').value=saved;
+  });
+  document.addEventListener('input',e=>{
+    if(e.target.id==='apiKey') localStorage.setItem('lw_api_key',e.target.value);
+  });
+  function clearKey(){
+    localStorage.removeItem('lw_api_key');
+    document.getElementById('apiKey').value='';
+  }
+
+  const DISC_TEXT='\n\n---\n\nWood is a natural material and will vary in color, grain, and tone from piece to piece and between production runs. Panels of different lengths or batches may not be an exact color match. For best results, we recommend ordering all panels for your project at the same time to ensure the most consistent appearance.';
+  const DISC_SLAT_TEXT='\n\n---\n\nWood is a natural material and will vary in color, grain, and tone from piece to piece and between production runs. Panels of different lengths or batches may not be an exact match. For best results, all panels for a project should be ordered at the same time to ensure the most consistent appearance.';
+
+  const vSidesHints={
+    '3sided':'<strong>3-sided:</strong> Real wood veneer on the face and both sides. No exposed MDF edges.',
+    '1sided':'<strong>1-sided (AFD):</strong> Face veneer only on MDF core. Never use language implying full wrapping.'
+  };
+  const vKindHints={
+    'natural':'<strong>Natural veneer:</strong> Real oak or walnut. Authentic grain, natural color variation. Photosensitive — will shift in tone with light exposure over time.',
+    'technical':'<strong>Technical veneer (Color Infused):</strong> Premium engineered wood with consistent, intentional tone built into the surface.'
+  };
+  const finishHints={
+    'color-infused':'<strong>Color Infused:</strong> Pigment penetrates deep into wood fibers. Tone built in, not painted on. Resists chips, fading, peeling. Satin, nearly matte.',
+    'urethane':'<strong>Urethane:</strong> UV cured urethane over real wood surface. Durable satin finish.',
+    'uv-urethane':'<strong>UV Cured Urethane (AFD):</strong> Topcoat on face veneer only.',
+    'unfinished':'<strong>Unfinished:</strong> Raw surface. Only face is accessible — 1/2" gap means edges cannot be evenly finished.'
+  };
+
+  function toggleGuide(id){ document.getElementById(id).classList.toggle('open'); }
+
+  function setType(el){
+    document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    pType=el.dataset.type;
+    const isSlat=pType==='acoustic-slat';
+    document.getElementById('veneerSection').style.display=isSlat?'block':'none';
+    document.getElementById('veneerKindSection').style.display=isSlat?'block':'none';
+    document.getElementById('finishSection').style.display=isSlat?'block':'none';
+  }
+
+  function setVeneer(val,btn){
+    vSides=val;
+    document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('veneerHint').innerHTML=vSidesHints[val];
+  }
+
+  function setVKind(val,el){
+    vKind=val;
+    document.querySelectorAll('#vk-natural,#vk-tech').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('veneerKindHint').innerHTML=vKindHints[val];
+  }
+
+  function setFinish(val,el){
+    finish=val;
+    document.querySelectorAll('#finishChips .chip').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('finishHint').innerHTML=finishHints[val];
+  }
+
+  function toggleEnv(e,el){
+    if(envs.includes(e)){envs=envs.filter(x=>x!==e);el.classList.remove('selected');}
+    else{envs.push(e);el.classList.add('selected');}
+  }
+
+  function toggleDisclaimer(){
+    if(!rawOutput) return;
+    const disc=document.getElementById('addNaturalDisc').checked;
+    const discText=pType==='acoustic-slat'?DISC_SLAT_TEXT:DISC_TEXT;
+    document.getElementById('outText').textContent=disc?rawOutput+discText:rawOutput;
+  }
+
+  function copyOut(){
+    navigator.clipboard.writeText(document.getElementById('outText').textContent).then(()=>{
+      const btn=event.target; btn.textContent='Copied'; setTimeout(()=>btn.textContent='Copy',1600);
+    });
+  }
+
+  function regenerate(){ if(lastIn) callAPI(lastIn); }
+
+  function buildSystem(inp){
+    const isSlat=inp.pType==='acoustic-slat';
+    const isReclaimed=inp.pType==='reclaimed';
+    const isTambour=inp.pType==='tambour';
+    const isForma=inp.pType==='forma';
+    const isHex=inp.pType==='hex';
+    const isSmooth=inp.pType==='smooth';
+    const is3D=inp.pType==='3d-textured';
+
+    let con='';
+    if(isSlat){
+      con=inp.vSides==='3sided'
+        ?`The slat is veneered on the face and both sides for a seamless, finished look from every angle. It is backed with a high-performance acoustic felt that absorbs sound and reduces echo. The panels improve how the room sounds, not just how it looks.`
+        :`Each slat is constructed with an MDF core and finished with a real ${inp.species||'wood'} veneer on the front-facing surface. It is backed with a high-performance acoustic felt that absorbs sound and reduces echo. The panels improve how the room sounds, not just how it looks.`;
+    }
+
+    const fh={
+      'color-infused':'Color Infused finish — pigment penetrates deep into the wood fibers, tone built in not painted on, resists chips/fading/peeling, satin/nearly matte',
+      'urethane':'UV cured urethane topcoat, durable satin finish',
+      'uv-urethane':'UV cured urethane on face veneer only',
+      'unfinished':'Raw unfinished surface, ready to stain or seal'
+    };
+    const vkh={
+      'natural':'Natural wood veneer — real slice of the named species, authentic grain, natural lot-to-lot variation, photosensitive (walnut especially will shift in tone with light exposure)',
+      'technical':'Technical (color-infused) veneer — premium engineered wood with consistent, intentional tone built into the surface'
+    };
+
+    const variationLine={
+      'subtle':'Grain variation is subtle — the overall appearance stays consistent across the wall.',
+      'moderate':'Grain variation is moderate — panels will show visible differences in tone and pattern that give the surface natural movement.',
+      'high':'Grain variation is high — each panel will look noticeably different. This is expected and is part of what makes this product distinct.'
+    };
+
+    const structureInstructions=`
+REQUIRED DESCRIPTION STRUCTURE — follow this exactly, in this order:
+
+1. OPENING (1-2 sentences)
+   - State the color tone clearly (light / medium / dark)
+   - State warmth (warm / cool / neutral)
+   - State variation level inline (subtle / moderate / high)
+   - Do not be poetic. Say what the customer needs to know.
+   - Example: "Medium-to-dark walnut tones with a warm, natural look. Grain variation is moderate, giving the surface visible movement without feeling overly busy."
+
+2. SURFACE (1-2 sentences)
+   - Describe what the texture actually is and what it does visually
+   - For slat panels: mention the acoustic felt benefit plainly
+   - Do not be clever. Say what the surface is.
+   - Example: "The vertical slat design adds depth and structure to a wall, while the acoustic backing helps reduce echo and soften sound in the room."
+
+3. VARIATION LINE (1 sentence, required)
+   - Short, direct, scannable
+   - Example: "Natural variation in color and grain is expected — no two panels will be identical."
+
+4. USE CASES (bullet list, 2-4 items)
+   - Each use case gets its own bullet. Do not combine multiple locations into one bullet.
+   - Specific locations where this product genuinely works
+   - Based on placement inputs if provided, otherwise use product type defaults
+   - Format: "Works well in:" followed by individual bullets — one location per bullet
+
+5. POSITIONING LINE (1 sentence, required)
+   - This is NOT filler. It must help the customer decide.
+   - Use one of these formats: "A strong option if...", "A versatile option if...", "A solid choice for...", "Well-suited for..."
+   - The second half MUST clarify who it is for, highlight a specific use case or aesthetic outcome, or differentiate it from other options
+   - Bad: "A reliable choice for any space." (vague, applies to everything)
+   - Good: "A strong option if you want a richer wood tone with added depth and acoustic performance."
+   - Rule: if the second half does not help someone choose, rewrite it.
+
+CRITICAL: The description must answer these questions a customer actually asks:
+- What does it actually look like?
+- How much variation should I expect?
+- What does the surface do?
+- Where should I use it?
+- Is this the right choice for me?`;
+
+    return `You write Luxewall product descriptions.
+
+BRAND VOICE:
+Luxewall sells DIY-friendly acoustic wood slat wall panels. The voice should feel design-forward, warm, confident, and accessible — like a stylish friend with great taste who makes the upgrade feel doable. Not Home Depot. Not generic ecommerce. Not fake luxury.
+
+GOAL:
+Every description should feel like it helps the customer picture the finished space, builds confidence without sounding generic, and subtly guides the buying decision.
+
+CORE VOICE RULES:
+- Lead with how the space feels after installation, not just what the product is
+- Specs support the story — they do not lead it
+- Warm, direct, and confident
+- Avoid generic overused phrases
+- Never sound low-end, salesy, or clinical
+- Do not over-explain — keep it tight and readable
+
+${structureInstructions}
+
+PRODUCT TYPE: ${inp.pType}
+${isSlat?`\nCONSTRUCTION:\n${con}\n`:''}
+${isSlat?`VENEER KIND: ${vkh[inp.vKind]}`:''}
+${isSlat?`FINISH: ${fh[inp.finish]||''}`:''}
+${isForma?`\nFORMA TILE RULES: Each box includes three 23.6" x 23.6" tiles, with one of each distinct pattern. These are designed to be installed together — rotating or mixing panels will change the overall look. Mention this clearly in the surface section. Do not mention dimensions in the opening.`:''}
+${isHex?`\nHEX PANEL RULES: The hex pattern creates a dimensional surface with depth. Variation is more noticeable on hex panels than on slat panels — make this clear in the variation line.`:''}
+${isReclaimed?`\nRECLAIMED RULES: True reclaimed pine lumber. If it fits naturally, mention it as a plain fact ("Made from true reclaimed pine lumber"). Do not editorialize. Do not say "sourced from demolished buildings." Do not use sustainability language. Say "layered texture" not "stacked profile" or "stacked relief."  `:''}
+${isTambour?`\nTAMBOUR RULES: The defining feature is flexibility — it bends around curves, corners, columns, and kitchen islands. Adheres with standard construction adhesive. Mention at least one specific use case. Do not call it easy or simple.`:''}
+${isSmooth?`\nSMOOTH PLANK RULES: Self-stick backing is the defining install feature — mention it. Do NOT mention tongue and groove connections.`:''}
+${is3D?`\nHEX/3D RULES: The cut gives the surface real depth. Never say "catches and scatters light," "shadow lines that shift," or "reads differently at noon than at dusk." Never use "geometry" or "shadow lines." Say "the cut gives the surface real depth."`:''}
+
+VARIATION CONTEXT FOR THIS PRODUCT:
+${variationLine[inp.variation]||'Variation level not specified — call out that natural variation is expected.'}
+
+HARD RULES:
+1. Follow the structure above exactly. Do not skip sections.
+2. NO specs — no panel dimensions or sizes. These live in the spec table.
+3. Never say "real wood look." If it IS real wood, no qualifier needed.
+4. TONE IS GIVEN — never infer from product name. Use only confirmed tone.
+5. FINISH TREATMENTS: if tone is whitewashed, say whitewashed. Never call a treated finish "natural."
+6. ${isSlat&&inp.vSides==='1sided'?'AFD: never say "three-sided," "fully wrapped." Use "veneer on the front-facing surface."':''}
+7. No boilerplate or weak phrasing. Banned: "reliable choice," "perfect solution," "elevate your space," "transform your home," "premium quality" (without context), "works with most spaces," "draws the eye," "luxury feel," anything that sounds like big box retail copy.
+8. No clever writing. No over-writing. If it sounds like a designer blog or a Home Depot tag, rewrite it.
+9. NO EM DASHES (—). Periods and commas only.
+10. This is a wall product. No flooring language: no wear layer, no refinishing, no subfloor.
+11. No foot traffic, walking surfaces, or underfoot durability references.
+12. No shifting light language: "shifts as light moves," "reads differently at noon than at dusk," "catches and holds light."
+13. No over-writing: "already lived somewhere," "the room has always had it," "settles into itself."
+14. No defensive qualifiers: "without feeling bare," "without pulling the room heavy," "without needing anything else."
+15. Stop after the statement. Do not explain it.
+16. In the variation line: never add a defensive qualifier. "Grain variation is moderate, giving the surface visible movement" is correct. "Grain variation is moderate, giving the surface visible movement without looking inconsistent" is wrong — cut everything after the positive statement.
+17. Acoustic felt: say "the room sounds better" not "the room performs better acoustically." Plain language only.
+17. LED: if Yes, weave in one brief mention. "Works with LuxeLED lighting." Do not make it the focus.
+
+OUTPUT FORMAT:
+[Product name]
+
+[Opening — 1-2 sentences: tone, warmth, variation]
+
+[Surface — 1-2 sentences: what the texture is and does]
+
+[Variation line — 1 sentence]
+
+Works well in:
+- [use case]
+- [use case]
+- [use case]
+
+[Positioning line — 1 sentence, optional]
+
+Nothing else. No preamble. No explanation.`;
+  }
+
+  async function generate(){
+    const apiKey=document.getElementById('apiKey').value.trim();
+    const name=document.getElementById('productName').value.trim();
+    const tone=document.getElementById('tone').value;
+    const variation=document.getElementById('variation').value;
+    if(!apiKey){alert('Please enter your Anthropic API key at the top of the page.');return;}
+    if(!name||!tone){alert('Product name and confirmed tone are both required.');return;}
+    if(!variation){alert('Variation level is required — customers need to know what to expect.');return;}
+    if(tone==='NEEDS_CONFIRMATION'){
+      document.getElementById('outputArea').classList.add('visible');
+      document.getElementById('outLabel').textContent=name;
+      document.getElementById('outText').textContent='[TONE NEEDS CONFIRMATION]\n\nDo not write this description until tone has been confirmed by reviewing the actual product or a confirmed color swatch.';
+      document.getElementById('checkerGrid').innerHTML='<div class="chk"><div class="dot fail"></div><span>Tone not confirmed — cannot generate</span></div>';
+      return;
+    }
+    const inp={
+      pType,vSides,vKind,finish,name,
+      species:document.getElementById('species').value,
+      tone,variation,
+      context:document.getElementById('context').value.trim(),
+      led:document.getElementById('addLED').checked,
+      envs:envs.join(', ')
+    };
+    lastIn=inp; callAPI(inp);
+  }
+
+  async function callAPI(inp){
+    const btn=document.getElementById('genBtn');
+    btn.disabled=true;
+    btn.innerHTML='Generating <span class="loader"><span></span><span></span><span></span></span>';
+    document.getElementById('outputArea').classList.add('visible');
+    document.getElementById('outText').textContent='';
+    document.getElementById('checkerGrid').innerHTML='';
+    document.getElementById('outLabel').textContent=inp.name;
+
+    const up=`Write a Luxewall product description for:
+Product name: ${inp.name}
+Product type: ${inp.pType}
+Species: ${inp.species||'not specified'}
+Confirmed tone: ${inp.tone}
+Variation level: ${inp.variation}
+Additional context: ${inp.context||'none'}
+Intended placement / use cases: ${inp.envs||'not specified — use appropriate defaults for this product type'}
+LED compatible: ${inp.led?'Yes — mention works with LuxeLED slat wall lighting':'No'}
+${inp.pType==='acoustic-slat'?`Veneer sides: ${inp.vSides==='3sided'?'3-sided (face and both sides)':'1-sided AFD (face only, MDF core)'}
+Veneer kind: ${inp.vKind}
+Finish: ${inp.finish}`:''}`;
+
+    try{
+      const apiKey=document.getElementById('apiKey').value.trim();
+      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:buildSystem(inp),messages:[{role:'user',content:up}]})});
+      const data=await res.json();
+      const text=data.content?.[0]?.text?.trim()||'No output returned.';
+      rawOutput=text;
+      const disc=document.getElementById('addNaturalDisc').checked;
+      const discText=inp.pType==='acoustic-slat'?DISC_SLAT_TEXT:DISC_TEXT;
+      document.getElementById('outText').textContent=disc?text+discText:text;
+      runChecks(text,inp);
+    }catch(e){document.getElementById('outText').textContent='Error: could not reach API.';}
+    btn.disabled=false; btn.textContent='Generate description';
+  }
+
+  function runChecks(text,inp){
+    const checks=[
+      {l:'Tone confirmed',p:!!inp.tone&&inp.tone!=='NEEDS_CONFIRMATION'},
+      {l:'Variation level stated',p:/variation is (subtle|moderate|high|expected)/i.test(text)},
+      {l:'Use cases included',p:/works well in/i.test(text)},
+      {l:'No panel dimensions in copy',p:!/(94\.5|118"|120"|108\.2|22\.5"|\d+"\s*(panel|length))/i.test(text)},
+      {l:'No "real wood look"',p:!/(real wood look|reads as real|real hardwood feel)/i.test(text)},
+      {l:'No banned phrases',p:!/(reliable choice|perfect solution|elevate your|transform your home|premium quality|draws the eye|luxury feel)/i.test(text)},
+      {l:'No em dashes',p:!/—/.test(text)},
+      {l:'No shifting light language',p:!/(shifts as (the )?light|reads differently at noon|catches and (holds|scatters) light|dances in the light)/i.test(text)},
+      {l:'No flooring language',p:!/(wear layer|refinish|subfloor|foot traffic|underfoot)/i.test(text)},
+      {l:inp.vSides==='1sided'?'No 3-sided wrapping language':'Construction accurate',p:inp.vSides!=='1sided'||!/(three.sided|fully wrapped)/i.test(text)}
+    ];
+    document.getElementById('checkerGrid').innerHTML=checks.map(c=>`<div class="chk"><div class="dot ${c.p?'pass':'fail'}"></div><span>${c.l}</span></div>`).join('');
+  }
+</script>
+</body>
+</html>
